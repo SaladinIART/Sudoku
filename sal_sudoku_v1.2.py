@@ -8,6 +8,7 @@ class SudokuGame:
         self.root.title("Sudoku Game v1.2")
         self.entries = [[None for _ in range(9)] for _ in range(9)]
         self.full_board = self.generate_full_board()
+        self.difficulty = "easy"  # Default difficulty
         self.grid = self.remove_numbers_to_create_puzzle(self.full_board)
         self.create_widgets()
 
@@ -46,7 +47,14 @@ class SudokuGame:
         fill_board()
         return board
 
-    def remove_numbers_to_create_puzzle(self, board, num_holes=40):
+    def remove_numbers_to_create_puzzle(self, board):
+        # Set number of holes based on difficulty
+        num_holes = {
+            "easy": 30,
+            "medium": 40,
+            "hard": 50
+        }[self.difficulty]
+
         # Make a copy of the board to modify
         puzzle = [row[:] for row in board]
 
@@ -61,6 +69,14 @@ class SudokuGame:
         return puzzle
 
     def create_widgets(self):
+        # Difficulty selection buttons
+        difficulty_frame = tk.Frame(self.root)
+        difficulty_frame.grid(row=0, column=0, columnspan=9, pady=10)
+
+        tk.Button(difficulty_frame, text="Easy", command=lambda: self.set_difficulty("easy")).pack(side="left")
+        tk.Button(difficulty_frame, text="Medium", command=lambda: self.set_difficulty("medium")).pack(side="left")
+        tk.Button(difficulty_frame, text="Hard", command=lambda: self.set_difficulty("hard")).pack(side="left")
+
         # Create a 9x9 grid of entry widgets
         for row in range(9):
             for col in range(9):
@@ -68,12 +84,27 @@ class SudokuGame:
                 if self.grid[row][col] != 0:
                     entry.insert(0, str(self.grid[row][col]))
                     entry.config(state="disabled")
-                entry.grid(row=row, column=col, padx=5, pady=5)
+                entry.grid(row=row + 1, column=col, padx=5, pady=5)
                 self.entries[row][col] = entry
 
         # Add a button to check the solution
         check_button = tk.Button(self.root, text="Check Solution", command=self.check_solution)
         check_button.grid(row=10, column=0, columnspan=9, pady=10)
+
+    def set_difficulty(self, difficulty):
+        self.difficulty = difficulty
+        self.grid = self.remove_numbers_to_create_puzzle(self.full_board)
+        self.update_grid()
+
+    def update_grid(self):
+        # Clear and update the grid with the new puzzle
+        for row in range(9):
+            for col in range(9):
+                self.entries[row][col].config(state="normal")
+                self.entries[row][col].delete(0, "end")
+                if self.grid[row][col] != 0:
+                    self.entries[row][col].insert(0, str(self.grid[row][col]))
+                    self.entries[row][col].config(state="disabled")
 
     def check_solution(self):
         try:
