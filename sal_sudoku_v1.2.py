@@ -7,7 +7,8 @@ class SudokuGame:
         self.root = root
         self.root.title("Sudoku Game v1.2")
         self.entries = [[None for _ in range(9)] for _ in range(9)]
-        self.grid = self.generate_puzzle()
+        self.full_board = self.generate_full_board()
+        self.grid = self.remove_numbers_to_create_puzzle(self.full_board)
         self.create_widgets()
 
     def generate_full_board(self):
@@ -32,7 +33,7 @@ class SudokuGame:
                 for col in range(9):
                     if board[row][col] == 0:
                         numbers = list(range(1, 10))
-                        random.shuffle(numbers)  # Shuffle numbers to add randomness
+                        random.shuffle(numbers)
                         for num in numbers:
                             if is_valid(num, row, col):
                                 board[row][col] = num
@@ -45,54 +46,19 @@ class SudokuGame:
         fill_board()
         return board
 
-    def generate_puzzle(self, num_holes=40):
-        # Generate a complete Sudoku board
-        board = self.generate_full_board()
+    def remove_numbers_to_create_puzzle(self, board, num_holes=40):
+        # Make a copy of the board to modify
+        puzzle = [row[:] for row in board]
 
-        # Function to check if the board has a unique solution
-        def has_unique_solution(board):
-            # Simple solver to check if the puzzle has a unique solution
-            def solve():
-                for row in range(9):
-                    for col in range(9):
-                        if board[row][col] == 0:
-                            for num in range(1, 10):
-                                if self.is_valid_for_board(board, num, row, col):
-                                    board[row][col] = num
-                                    if solve():
-                                        return True
-                                    board[row][col] = 0
-                            return False
-                return True
-
-            # Create a copy of the board for solving
-            board_copy = [row[:] for row in board]
-            return solve()
-
-        # Randomly remove numbers to create holes in the puzzle
+        # Remove numbers randomly to create holes
         holes = 0
         while holes < num_holes:
             row, col = random.randint(0, 8), random.randint(0, 8)
-            if board[row][col] != 0:
-                temp = board[row][col]
-                board[row][col] = 0
-                if not has_unique_solution(board):
-                    board[row][col] = temp
-                else:
-                    holes += 1
-        return board
+            if puzzle[row][col] != 0:
+                puzzle[row][col] = 0
+                holes += 1
 
-    def is_valid_for_board(self, board, num, row, col):
-        # Validation logic for the given board
-        for x in range(9):
-            if board[row][x] == num or board[x][col] == num:
-                return False
-        start_row, start_col = 3 * (row // 3), 3 * (col // 3)
-        for i in range(3):
-            for j in range(3):
-                if board[start_row + i][start_col + j] == num:
-                    return False
-        return True
+        return puzzle
 
     def create_widgets(self):
         # Create a 9x9 grid of entry widgets
@@ -101,7 +67,7 @@ class SudokuGame:
                 entry = tk.Entry(self.root, width=2, font=("Arial", 18), justify="center")
                 if self.grid[row][col] != 0:
                     entry.insert(0, str(self.grid[row][col]))
-                    entry.config(state="disabled")  # Make it read-only
+                    entry.config(state="disabled")
                 entry.grid(row=row, column=col, padx=5, pady=5)
                 self.entries[row][col] = entry
 
