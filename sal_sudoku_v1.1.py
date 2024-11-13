@@ -7,8 +7,8 @@ class SudokuGame:
         self.root = root
         self.root.title("Sudoku Game v1.1")
         self.difficulty = "easy"  # Default difficulty
-        self.grid = self.select_puzzle(self.difficulty)
         self.entries = [[None for _ in range(9)] for _ in range(9)]
+        self.grid = self.select_puzzle(self.difficulty)
         self.create_widgets()
 
     def select_puzzle(self, difficulty):
@@ -27,12 +27,12 @@ class SudokuGame:
             ]
         ]
 
+        # Add medium and hard puzzles if needed
         medium_puzzles = [
-            # Add your medium puzzles here
+            # Example medium puzzles
         ]
-
         hard_puzzles = [
-            # Add your hard puzzles here
+            # Example hard puzzles
         ]
 
         if difficulty == "easy":
@@ -54,11 +54,10 @@ class SudokuGame:
         # Create a 9x9 grid of entry widgets
         for row in range(9):
             for col in range(9):
+                entry = tk.Entry(self.root, width=2, font=("Arial", 18), justify="center")
                 if self.grid[row][col] != 0:
-                    entry = tk.Entry(self.root, width=2, font=("Arial", 18), justify="center", state="disabled")
                     entry.insert(0, str(self.grid[row][col]))
-                else:
-                    entry = tk.Entry(self.root, width=2, font=("Arial", 18), justify="center")
+                    entry.config(state="disabled")  # Make it read-only
                 entry.grid(row=row + 1, column=col, padx=5, pady=5)
                 self.entries[row][col] = entry
 
@@ -75,12 +74,12 @@ class SudokuGame:
         # Clear and update the grid with the new puzzle
         for row in range(9):
             for col in range(9):
+                self.entries[row][col].config(state="normal")  # Enable all entries
+                self.entries[row][col].delete(0, "end")  # Clear existing content
                 if self.grid[row][col] != 0:
-                    self.entries[row][col].delete(0, "end")
                     self.entries[row][col].insert(0, str(self.grid[row][col]))
-                    self.entries[row][col].config(state="disabled")
+                    self.entries[row][col].config(state="disabled")  # Make it read-only
                 else:
-                    self.entries[row][col].config(state="normal")
                     self.entries[row][col].delete(0, "end")
 
     def check_solution(self):
