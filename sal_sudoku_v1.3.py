@@ -8,14 +8,13 @@ class SudokuGame:
         self.root.title("Sudoku Game v1.3")
         self.entries = [[None for _ in range(9)] for _ in range(9)]
         self.full_board = self.generate_full_board()
+        self.difficulty = "easy"  # Default difficulty
         self.grid = self.remove_numbers_to_create_puzzle(self.full_board)
         self.create_widgets()
 
     def generate_full_board(self):
-        # Generate an empty 9x9 grid
         board = [[0 for _ in range(9)] for _ in range(9)]
 
-        # Helper function to check if a number is valid
         def is_valid(num, row, col):
             for x in range(9):
                 if board[row][x] == num or board[x][col] == num:
@@ -27,7 +26,6 @@ class SudokuGame:
                         return False
             return True
 
-        # Backtracking function to fill the board
         def fill_board():
             for row in range(9):
                 for col in range(9):
@@ -46,11 +44,14 @@ class SudokuGame:
         fill_board()
         return board
 
-    def remove_numbers_to_create_puzzle(self, board, num_holes=40):
-        # Make a copy of the board to modify
-        puzzle = [row[:] for row in board]
+    def remove_numbers_to_create_puzzle(self, board):
+        num_holes = {
+            "easy": 30,
+            "medium": 40,
+            "hard": 50
+        }[self.difficulty]
 
-        # Remove numbers randomly to create holes
+        puzzle = [row[:] for row in board]
         holes = 0
         while holes < num_holes:
             row, col = random.randint(0, 8), random.randint(0, 8)
@@ -61,7 +62,13 @@ class SudokuGame:
         return puzzle
 
     def create_widgets(self):
-        # Create a 9x9 grid of entry widgets
+        difficulty_frame = tk.Frame(self.root)
+        difficulty_frame.grid(row=0, column=0, columnspan=9, pady=10)
+
+        tk.Button(difficulty_frame, text="Easy", command=lambda: self.set_difficulty("easy")).pack(side="left")
+        tk.Button(difficulty_frame, text="Medium", command=lambda: self.set_difficulty("medium")).pack(side="left")
+        tk.Button(difficulty_frame, text="Hard", command=lambda: self.set_difficulty("hard")).pack(side="left")
+
         for row in range(9):
             for col in range(9):
                 entry = tk.Entry(self.root, width=2, font=("Arial", 18), justify="center")
@@ -69,31 +76,41 @@ class SudokuGame:
                     entry.insert(0, str(self.grid[row][col]))
                     entry.config(state="disabled")
                 else:
-                    # Add a validation function to the entry widget
                     entry.bind("<FocusOut>", lambda event, r=row, c=col: self.validate_entry(event, r, c))
-                entry.grid(row=row, column=col, padx=5, pady=5)
+                entry.grid(row=row + 1, column=col, padx=5, pady=5)
                 self.entries[row][col] = entry
 
-        # Add a button to check the solution
         check_button = tk.Button(self.root, text="Check Solution", command=self.check_solution)
         check_button.grid(row=10, column=0, columnspan=9, pady=10)
 
-        # Add a button for hints
         hint_button = tk.Button(self.root, text="Get Hint", command=self.give_hint)
         hint_button.grid(row=11, column=0, columnspan=9, pady=10)
+
+    def set_difficulty(self, difficulty):
+        self.difficulty = difficulty
+        self.grid = self.remove_numbers_to_create_puzzle(self.full_board)
+        self.update_grid()
+
+    def update_grid(self):
+        for row in range(9):
+            for col in range(9):
+                self.entries[row][col].config(state="normal")
+                self.entries[row][col].delete(0, "end")
+                if self.grid[row][col] != 0:
+                    self.entries[row][col].insert(0, str(self.grid[row][col]))
+                    self.entries[row][col].config(state="disabled")
 
     def validate_entry(self, event, row, col):
         try:
             value = int(self.entries[row][col].get())
             if not (1 <= value <= 9) or not self.is_valid(row, col, value):
-                self.entries[row][col].config(fg="red")  # Invalid entry in red
+                self.entries[row][col].config(fg="red")
             else:
-                self.entries[row][col].config(fg="black")  # Valid entry in black
+                self.entries[row][col].config(fg="black")
         except ValueError:
-            self.entries[row][col].config(fg="red")  # Non-integer input in red
+            self.entries[row][col].config(fg="red")
 
     def give_hint(self):
-        # Provide a hint by filling in one of the empty cells
         for row in range(9):
             for col in range(9):
                 if self.grid[row][col] == 0 and self.entries[row][col].get() == "":
@@ -114,7 +131,6 @@ class SudokuGame:
             messagebox.showerror("Error", "Invalid number or placement. Please try again.")
 
     def is_valid(self, row, col, num):
-        # Validation logic for checking user input
         for x in range(9):
             if x != col and int(self.entries[row][x].get() or 0) == num:
                 return False
