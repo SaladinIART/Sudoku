@@ -22,6 +22,10 @@ class SudokuGame:
         self.redo_stack = []  # Stack to store moves for redo
         self.redo_count = 0  # Counter for redo operations
         self.start_time = time.time()  # Start the timer
+        self.steps_count = 0
+        self.undo_clicks = 0
+        self.redo_clicks = 0
+        self.hint_clicks = 0
         self.create_widgets()
 
     def generate_full_board(self):
@@ -113,6 +117,9 @@ class SudokuGame:
         load_button = tk.Button(self.root, text="Load Game", command=self.load_game)
         load_button.grid(row=12, column=5, columnspan=4, pady=10)
 
+        self.scoreboard_label = tk.Label(self.root, text=self.get_scoreboard_text(), font=("Arial", 12))
+        self.scoreboard_label.grid(row=13, column=0, columnspan=9, pady=10)
+
     def set_difficulty(self, difficulty):
         self.difficulty = difficulty
         self.full_board = self.generate_full_board()  # Regenerate board for new puzzle
@@ -132,7 +139,9 @@ class SudokuGame:
         try:
             new_value = self.entries[row][col].get()
             old_value = self.grid[row][col] if self.entries[row][col]['state'] == 'disabled' else event.widget._last_value if hasattr(event.widget, '_last_value') else ""
-            # Save the old value for undo
+            # Only count as a step if the value actually changed
+            if new_value != old_value:
+                self.steps_count += 1
             self.undo_stack.append((row, col, old_value, new_value))
             self.redo_stack.clear()
             self.undo_count = 0
@@ -159,6 +168,7 @@ class SudokuGame:
         for row in range(9):
             for col in range(9):
                 if self.grid[row][col] == 0 and self.entries[row][col].get() == "":
+                    self.hint_clicks += 1
                     self.entries[row][col].insert(0, str(self.full_board[row][col]))
                     self.entries[row][col].config(state="disabled")
                     return
@@ -168,6 +178,7 @@ class SudokuGame:
             messagebox.showinfo("Undo Limit", "You can only undo 3 times in a row.")
             return
         if self.undo_stack:
+            self.undo_clicks += 1
             row, col, old_value, new_value = self.undo_stack.pop()
             current_value = self.entries[row][col].get()
             self.redo_stack.append((row, col, old_value, current_value))
@@ -183,6 +194,7 @@ class SudokuGame:
             messagebox.showinfo("Redo Limit", "You can only redo 3 times in a row.")
             return
         if self.redo_stack:
+            self.redo_clicks += 1
             row, col, old_value, new_value = self.redo_stack.pop()
             current_value = self.entries[row][col].get()
             self.undo_stack.append((row, col, current_value, new_value))
@@ -261,9 +273,12 @@ class SudokuGame:
 
     def calculate_score(self):
         elapsed_time = time.time() - self.start_time
-        hints_used = len(self.undo_stack)
-        score = max(1000 - int(elapsed_time) - (hints_used * 10), 0)
-        return score
+        score = 1000
+        score -= self.steps_count
+        score -= 5 * (self.undo_clicks + self.redo_clicks)
+        score -= 10 * self.hint_clicks
+        score -= int(elapsed_time)
+        return max(score, 0)
 
     def is_valid(self, row, col, num):
         for x in range(9):
@@ -279,6 +294,12 @@ class SudokuGame:
                         int(self.entries[start_row + i][start_col + j].get() or 0) == num:
                     return False
         return True
+
+    def get_scoreboard_text(self):
+        return f"Steps: {self.steps_count} | Undo: {self.undo_clicks} | Redo: {self.redo_clicks} | Hint: {self.hint_clicks}"
+
+    def update_scoreboard(self):
+        self.scoreboard_label.config(text=self.get_scoreboard_text())
 
 if __name__ == "__main__":
     root = tk.Tk()
