@@ -18,7 +18,9 @@ class SudokuGame:
         self.difficulty = "easy"  # Default difficulty
         self.grid = self.remove_numbers_to_create_puzzle(self.full_board)
         self.undo_stack = []  # Stack to store moves for undo
+        self.undo_count = 0  # Counter for undo operations
         self.redo_stack = []  # Stack to store moves for redo
+        self.redo_count = 0  # Counter for redo operations
         self.start_time = time.time()  # Start the timer
         self.create_widgets()
 
@@ -128,12 +130,16 @@ class SudokuGame:
 
     def validate_entry(self, event, row, col):
         try:
-            value = self.entries[row][col].get()
-            if value:
-                self.undo_stack.append((row, col, self.entries[row][col].get()))
-                self.redo_stack.clear()
+            new_value = self.entries[row][col].get()
+            old_value = self.grid[row][col] if self.entries[row][col]['state'] == 'disabled' else event.widget._last_value if hasattr(event.widget, '_last_value') else ""
+            # Save the old value for undo
+            self.undo_stack.append((row, col, old_value, new_value))
+            self.redo_stack.clear()
+            self.undo_count = 0
+            self.redo_count = 0
+            event.widget._last_value = new_value  # Track last value for this widget
 
-            if int(value) != self.full_board[row][col]:
+            if new_value and int(new_value) != self.full_board[row][col]:
                 self.entries[row][col].config(fg="orange")
             else:
                 self.entries[row][col].config(fg="black")
@@ -158,20 +164,34 @@ class SudokuGame:
                     return
 
     def undo_move(self):
+        if self.undo_count >= 3:
+            messagebox.showinfo("Undo Limit", "You can only undo 3 times in a row.")
+            return
         if self.undo_stack:
-            row, col, value = self.undo_stack.pop()
-            self.redo_stack.append((row, col, self.entries[row][col].get()))
+            row, col, old_value, new_value = self.undo_stack.pop()
+            current_value = self.entries[row][col].get()
+            self.redo_stack.append((row, col, old_value, current_value))
             self.entries[row][col].delete(0, "end")
-            self.entries[row][col].insert(0, value)
+            if old_value:
+                self.entries[row][col].insert(0, old_value)
             self.entries[row][col].config(fg="black")
+            self.undo_count += 1
+            self.redo_count = 0
 
     def redo_move(self):
+        if self.redo_count >= 3:
+            messagebox.showinfo("Redo Limit", "You can only redo 3 times in a row.")
+            return
         if self.redo_stack:
-            row, col, value = self.redo_stack.pop()
-            self.undo_stack.append((row, col, self.entries[row][col].get()))
+            row, col, old_value, new_value = self.redo_stack.pop()
+            current_value = self.entries[row][col].get()
+            self.undo_stack.append((row, col, current_value, new_value))
             self.entries[row][col].delete(0, "end")
-            self.entries[row][col].insert(0, value)
+            if new_value:
+                self.entries[row][col].insert(0, new_value)
             self.entries[row][col].config(fg="black")
+            self.redo_count += 1
+            self.undo_count = 0
 
     def generate_file_name(self):
         return datetime.now().strftime("%Y%m%d_%I.%M%p") + ".json"
