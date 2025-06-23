@@ -6,6 +6,8 @@ import json
 import time
 import os
 from datetime import datetime
+import copy
+
 
 class SudokuGame:
     def __init__(self, root):
@@ -59,7 +61,7 @@ class SudokuGame:
             "hard": 50
         }[self.difficulty]
 
-        puzzle = [row[:] for row in board]
+        puzzle = copy.deepcopy(board) # use deepcopy to avoid modifying the original board
         holes = 0
         while holes < num_holes:
             row, col = random.randint(0, 8), random.randint(0, 8)
@@ -77,9 +79,12 @@ class SudokuGame:
         tk.Button(difficulty_frame, text="Medium", command=lambda: self.set_difficulty("medium")).pack(side="left")
         tk.Button(difficulty_frame, text="Hard", command=lambda: self.set_difficulty("hard")).pack(side="left")
 
+        # Validation command for entries
+        vcmd = (self.root.register(self.validate_input), '%P')
+
         for row in range(9):
             for col in range(9):
-                entry = tk.Entry(self.root, width=2, font=("Arial", 18), justify="center")
+                entry = tk.Entry(self.root, width=2, font=("Arial", 18), justify="center", validate="key", validatecommand=vcmd)
                 if self.grid[row][col] != 0:
                     entry.insert(0, str(self.grid[row][col]))
                     entry.config(state="disabled")
@@ -108,6 +113,7 @@ class SudokuGame:
 
     def set_difficulty(self, difficulty):
         self.difficulty = difficulty
+        self.full_board = self.generate_full_board()  # Regenerate board for new puzzle
         self.grid = self.remove_numbers_to_create_puzzle(self.full_board)
         self.update_grid()
 
@@ -133,6 +139,15 @@ class SudokuGame:
                 self.entries[row][col].config(fg="black")
         except ValueError:
             self.entries[row][col].config(fg="orange")
+
+    def validate_input(self, value):
+        if value == "":
+            return True
+        if not value.isdigit():
+            return False
+        if int(value) < 1 or int(value) > 9:
+            return False
+        return True
 
     def give_hint(self):
         for row in range(9):
