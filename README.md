@@ -74,8 +74,8 @@ We welcome contributions from the community! If you'd like to contribute, please
 ## 📬 Contact
 
 Feel free to reach out if you have any questions, suggestions, or feedback:
-- **Email**: [Your Email]
-- **GitHub**: [Your GitHub Profile]
+- **Email**: saladiniart@gmail.com
+- **GitHub**: SaladinIART
 
 ---
 
